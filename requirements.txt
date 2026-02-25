@@ -1,0 +1,25 @@
+# Core framework
+crewai==0.130.0
+crewai-tools==0.47.1
+
+# API
+fastapi==0.110.3
+uvicorn==0.29.0
+python-multipart==0.0.9
+
+# LLM
+openai==1.30.5
+langchain-openai==0.1.8
+langchain-community==0.2.4
+langchain-core==0.2.5
+
+# PDF processing
+pypdf==4.2.0
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.7.1
+
+# Optional: Bonus queue worker support
+redis==5.0.4
+celery==5.3.6

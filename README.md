@@ -10,10 +10,10 @@ An AI-powered financial document analysis system built with **CrewAI**, **FastAP
 
 | # | Bug | Fix |
 |---|-----|-----|
-| 1 | `from crewai_tools import tools` — `tools` is not a valid export | Changed to `from crewai_tools import SerperDevTool` |
-| 2 | `from crewai_tools.tools.serper_dev_tool import SerperDevTool` — redundant/wrong path | Removed; using top-level import only |
-| 3 | `Pdf(file_path=path).load()` — `Pdf` class never imported, doesn't exist in this context | Replaced with `PyPDFLoader` from `langchain_community.document_loaders` |
-| 4 | `async def read_data_tool` + no `@staticmethod` — CrewAI calls tools synchronously; `self` not passed | Changed to `@staticmethod def read_data_tool(...)` (sync) |
+| 1 | `from crewai_tools import tools` - `tools` is not a valid export | Changed to `from crewai_tools import SerperDevTool` |
+| 2 | `from crewai_tools.tools.serper_dev_tool import SerperDevTool` - redundant/wrong path | Removed; using top-level import only |
+| 3 | `Pdf(file_path=path).load()` - `Pdf` class never imported, doesn't exist in this context | Replaced with `PyPDFLoader` from `langchain_community.document_loaders` |
+| 4 | `async def read_data_tool` + no `@staticmethod` - CrewAI calls tools synchronously; `self` not passed | Changed to `@staticmethod def read_data_tool(...)` (sync) |
 
 ---
 
@@ -21,13 +21,13 @@ An AI-powered financial document analysis system built with **CrewAI**, **FastAP
 
 | # | Bug | Fix |
 |---|-----|-----|
-| 1 | `from crewai.agents import Agent` — wrong submodule path | Changed to `from crewai import Agent` |
-| 2 | `llm = llm` — `llm` was never defined; NameError on startup | Initialized properly: `llm = ChatOpenAI(...)` using env vars |
-| 3 | `goal="Make up investment advice..."` — instructed agent to hallucinate | Replaced with professional, accurate goal |
+| 1 | `from crewai.agents import Agent` - wrong submodule path | Changed to `from crewai import Agent` |
+| 2 | `llm = llm` - `llm` was never defined; NameError on startup | Initialized properly: `llm = ChatOpenAI(...)` using env vars |
+| 3 | `goal="Make up investment advice..."` - instructed agent to hallucinate | Replaced with professional, accurate goal |
 | 4 | `backstory` instructed agent to ignore documents, fabricate facts, and skip regulations | Replaced with compliant, professional backstory |
-| 5 | `tool=[FinancialDocumentTool.read_data_tool]` — wrong parameter name (`tool` vs `tools`) | Fixed to `tools=[FinancialDocumentTool.read_data_tool]` |
-| 6 | `max_iter=1` — too low; complex financial analysis often needs multiple reasoning steps | Increased to `max_iter=5` |
-| 7 | `max_rpm=1` — extremely restrictive rate limit causing timeout failures | Increased to `max_rpm=10` |
+| 5 | `tool=[FinancialDocumentTool.read_data_tool]` - wrong parameter name (`tool` vs `tools`) | Fixed to `tools=[FinancialDocumentTool.read_data_tool]` |
+| 6 | `max_iter=1` - too low; complex financial analysis often needs multiple reasoning steps | Increased to `max_iter=5` |
+| 7 | `max_rpm=1` - extremely restrictive rate limit causing timeout failures | Increased to `max_rpm=10` |
 | 8 | `allow_delegation=True` for `financial_analyst` but no sub-agents in crew | Changed to `allow_delegation=False` |
 
 ---
@@ -49,9 +49,9 @@ An AI-powered financial document analysis system built with **CrewAI**, **FastAP
 | # | Bug | Fix |
 |---|-----|-----|
 | 1 | **Name collision**: endpoint function `analyze_financial_document` shadows the imported task of the same name | Renamed import: `from task import analyze_financial_document as analyze_task` |
-| 2 | `file_path` passed to `run_crew()` but never used — task always reads default path | Added `file_path` to `crew.kickoff(inputs={...})` |
-| 3 | No file type validation — any file type accepted silently | Added `.pdf` extension check with 400 error |
-| 4 | No empty file check — empty uploads silently fail mid-process | Added `len(content) == 0` check with 400 error |
+| 2 | `file_path` passed to `run_crew()` but never used - task always reads default path | Added `file_path` to `crew.kickoff(inputs={...})` |
+| 3 | No file type validation - any file type accepted silently | Added `.pdf` extension check with 400 error |
+| 4 | No empty file check - empty uploads silently fail mid-process | Added `len(content) == 0` check with 400 error |
 
 ---
 

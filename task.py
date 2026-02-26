@@ -2,7 +2,7 @@
 from crewai import Task
 
 from agents import financial_analyst, verifier
-from tools import search_tool, FinancialDocumentTool
+from tools import FinancialDocumentTool, read_data_tool
 
 ## Creating a task to help solve user's query
 # BUG FIX 1: Description was "maybe solve or something interesting" - completely vague and irresponsible

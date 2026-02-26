@@ -1,38 +1,67 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 import os
 import uuid
+import google.genai as genai
+from dotenv import load_dotenv
 
-from crewai import Crew, Process
-from agents import financial_analyst
-# BUG FIX 1: Name collision - the imported task and the endpoint function both named
-# 'analyze_financial_document'. Renamed the import to avoid shadowing.
-from task import analyze_financial_document as analyze_task
+load_dotenv()
+
+from tools import read_data_tool
 
 app = FastAPI(
     title="Financial Document Analyzer",
-    description="AI-powered financial document analysis using CrewAI agents",
+    description="AI-powered financial document analysis",
     version="1.0.0"
 )
 
+# Configure Gemini
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def run_crew(query: str, file_path: str = "data/sample.pdf"):
-    """Run the CrewAI financial analysis crew."""
-    financial_crew = Crew(
-        agents=[financial_analyst],
-        tasks=[analyze_task],
-        process=Process.sequential,
-        verbose=True,
+
+def run_analysis(query: str, file_path: str) -> str:
+    """Analyze financial document using Gemini directly."""
+    
+    # Read the PDF text
+    document_text = read_data_tool.run(file_path)
+
+    if not document_text:
+        raise ValueError("Could not extract text from document.")
+
+    prompt = f"""
+You are a Senior Financial Analyst.
+
+Analyze the following financial document and answer this query:
+{query}
+
+FINANCIAL DOCUMENT:
+{document_text[:50000]}
+
+Please provide:
+1. Executive Summary
+2. Key Financial Metrics (with actual numbers)
+3. Trend Analysis
+4. Notable Highlights and Risk Factors
+5. Investment Insights
+
+Base ALL findings strictly on the document.
+Include disclaimer that this is for informational purposes only.
+"""
+
+    # ✅ ACTUAL GEMINI CALL (this was missing)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-lite",
+        contents=prompt
     )
-    # BUG FIX 2: file_path was passed to run_crew but never forwarded to the crew/task.
-    # The task uses read_data_tool which needs the path. We inject it via the inputs dict.
-    result = financial_crew.kickoff(inputs={'query': query, 'file_path': file_path})
-    return result
+
+    return response.text
 
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
-    return {"message": "Financial Document Analyzer API is running", "status": "healthy"}
+    return {
+        "message": "Financial Document Analyzer API is running",
+        "status": "healthy"
+    }
 
 
 @app.post("/analyze")
@@ -42,11 +71,8 @@ async def analyze_document_endpoint(
 ):
     """
     Analyze a financial document and provide comprehensive investment insights.
-
-    - **file**: PDF financial document to analyze
-    - **query**: Specific question or analysis focus (optional)
     """
-    # BUG FIX 3: No file type validation - anyone could upload non-PDFs
+
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
@@ -54,36 +80,32 @@ async def analyze_document_endpoint(
     file_path = f"data/financial_document_{file_id}.pdf"
 
     try:
-        # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
-
-        # Save uploaded file
         content = await file.read()
 
-        # BUG FIX 4: No file size check - could accept empty or enormous files
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
         with open(file_path, "wb") as f:
             f.write(content)
 
-        # Validate / default query
         if not query or not query.strip():
             query = "Analyze this financial document for investment insights"
 
-        # Process the financial document with CrewAI
-        response = run_crew(query=query.strip(), file_path=file_path)
+        analysis_result = run_analysis(
+            query=query.strip(),
+            file_path=file_path
+        )
 
         return {
             "status": "success",
             "query": query,
-            "analysis": str(response),
+            "analysis": analysis_result,
             "file_processed": file.filename
         }
 
     except HTTPException:
-        raise  # re-raise our own HTTP errors unchanged
-
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -91,12 +113,11 @@ async def analyze_document_endpoint(
         )
 
     finally:
-        # Clean up uploaded file
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except Exception:
-                pass  # Ignore cleanup errors
+                pass
 
 
 if __name__ == "__main__":
